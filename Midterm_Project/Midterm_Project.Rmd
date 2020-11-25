@@ -1,0 +1,1344 @@
+---
+title: "QBS 181 - Midterm"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Uploading a XPT file in R Markdown
+
+```{r uploading file}
+install.packages("Hmisc")
+install.packages("SASxport")
+
+library("Hmisc")
+library("SASxport")
+```
+
+```{r importing data}
+lookup.xport("DIQ_I.xpt")
+diabetes_dataset <- read.xport("DIQ_I.xpt")
+View(diabetes_dataset)
+```
+
+General Overview of the Data Set: 
+
+The information collected within the dataset identifies personal interview data per participant related to diabetes, pre-diabetes, and the use of insulin or oral hypoglycemic medications, and diabetic retinopathy. Furthermore, participants self-reported information regarding their awareness of risk factors for diabetes, general knowledge of diabetic complications, and medical personal cares associated with diabetes. 
+
+Sample Description: All survey participants were aged 1 year and older. Researchers modified the questions asked when interacting with different age groups or depending on the participants history with diabetes. 
+
+Mode of Administration: Researchers conducted the interviews in a home setting and used the CAPI system to record the responses from participants. Participants 16 years and older as well as those who were emancipated were interviewed on their own. 
+
+Advantages of the CAPI system: The system is built in with consistency checks in an attempt to reduce data errors. 
+
+Data Processing and Editing: When compiling the data, frequency was counted and skip patterns were verified. 
+
+Editing Variables: 
+
+DID040: How old were you when a doctor first told you that you had diabetes?
+All responses of age 80 years and older were coded as “80”, to be consistent with the coding for the participant age variable in the demographics file. Also, the onset of diabetes at age less than 1 year was coded as 666.
+
+DID060: For how long have you been taking insulin?
+For those participants who had been taking insulin less than 1 month were coded as 666.
+
+DIQ175A–DIQ175W: Why do you think you are at risk for diabetes/pre-diabetes?
+The variables DIQ175A–DIQ175U correspond to each response category in the hand card. The variables DIQ175V (Craving for sweet/eating a lot of sugar), DIQ175W (Medication), and DIQ175X (Polycystic ovarian syndrome) were derived from other specified responses.
+
+DID250: How many times have you seen doctor in the past 12 months?
+The value was coded as 0 for participants who reported “None.”
+
+DID260: How often do you check your blood for glucose or sugar?
+The value was coded as 0 for participatns who reported “Never.”
+
+DID320: What was your most recent LDL cholesterol number?
+The value was coded as 5555 and 6666 for participants who reported “Never heard of LDL” and “Never had cholesterol test” respectively.
+
+DID310S/D: What does the doctor say your blood pressure should be?
+DID330: What does doctor say your LDL cholesterol should be?
+If a participant reported “Provider did not specify goal,” the value of corresponding variable was coded as 6666.
+
+DID341: During the past 12 months, how many times has a doctor checked your feet for any sores or irritations?
+The value was coded as 0 for participants who reported “None.”
+
+DID350: How often do you check your feet for sores or irritation?
+The value was coded as 0 for participants who reported “None.”
+
+Analytic Modifications: 
+
+1. DIQ040G (DID040G) & DIQ040Q (DID040Q) were combined under a common variable name DID040, which refers to both the "Age when the participants was told they had diabetes" and the "Number of years of age of the participant"
+
+2. DIQ060G (DID060G) & DID060Q () were combined under a common variable name DID060, which includes the following tqo questions; "How long participants have been taking insulin" and the "Number of mos/yrs taking insulin per participant"
+
+CodeBook and Frequencies: 
+
+1. DID320 - What was most recent LDL number
+
+Verifying the number of counts within the DID320 variable
+
+```{r DID320 counts}
+
+DID320_count_4_520 = 0 
+DID320_count_5555 = 0 
+DID320_count_6666 = 0 
+DID320_count_7777 = 0 
+DID320_count_9999 = 0
+DID320_count_NA = 0
+
+length = nrow(diabetes_dataset)
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DID320[i]
+  
+  if (!is.na(DID_value)){
+    if (((DID_value > 4) || (DID_value == 4)) && ((DID_value < 520) || (DID_value == 520))){ 
+      DID320_count_4_520 = DID320_count_4_520 + 1
+       }
+    else if (DID_value == 5555){
+      DID320_count_5555 = DID320_count_5555 + 1 
+      }
+    else if (DID_value == 6666){
+      DID320_count_6666 = DID320_count_6666 + 1 
+      }
+    else if (DID_value == 7777){ 
+      DID320_count_7777 = DID320_count_7777 + 1
+      }
+    else if (DID_value == 9999){
+      DID320_count_9999 = DID320_count_9999 + 1
+      }
+  }
+ 
+   else if (is.na(DID_value)){
+      DID320_count_NA = DID320_count_NA + 1 
+  }
+}
+
+DID320_count_4_520
+DID320_count_5555 
+DID320_count_6666
+DID320_count_7777 
+DID320_count_9999 
+DID320_count_NA
+
+DID320_sum = DID320_count_4_520 + DID320_count_5555 + DID320_count_6666 + DID320_count_7777 + DID320_count_9999 + DID320_count_NA
+DID320_sum
+
+```
+
+From the results above, it becomes apparent that the values match those expected/indicated on the website
+
+2. DIQ010: Doctor Told you have Diabetes, 
+
+Verifying the number of counts within the DIQ010 variable
+
+```{r DIQ010 counts}
+
+count_1 = 0 
+count_2 = 0 
+count_3 = 0 
+count_7 = 0 
+count_9 = 0 
+count_NA = 0
+
+length = nrow(diabetes_dataset)
+
+for (i in 1:length) {
+  DIQ_value <- diabetes_dataset$DIQ010[i]
+  if (DIQ_value == 1){ 
+    count_1 = count_1 + 1
+    }
+  else if (DIQ_value == 2){
+    count_2 = count_2 + 1 
+    }
+  else if (DIQ_value == 3){ 
+    count_3 = count_3 + 1
+    }
+  else if (DIQ_value == 7){
+    count_7 = count_7 + 1 
+    }
+  else if (DIQ_value == 9){ 
+    count_9 = count_9 + 1
+    }
+  else if (is.na(DIQ_value)){
+    count_NA = count_NA + 1 
+    }
+}
+
+length
+count_1
+count_2
+count_3 
+count_7 
+count_9 
+count_NA
+```
+
+From the results above, it becomes apparent that the values match those expected/indicated on the website
+
+3. DID040 - Age when first told you had diabetes
+
+Verifying the number of counts within the DID040 variable
+
+```{r DIQ010 counts}
+length = nrow(diabetes_dataset)
+output <- c()
+
+for (i in 1:length){
+  DID040_value <- diabetes_dataset$DID040[i]
+  if (!is.na(DID040_value)){
+    output <- append(output,DID040_value)
+  }
+}
+
+length_output = length(output)
+length_output
+length_output == length
+
+
+DID040_count_2_78 = 0 
+DID040_count_80 = 0 
+DID040_count_666 = 0 
+DID040_count_777 = 0 
+DID040_count_999 = 0 
+DID040_count_NA = length - length_output
+
+for (i in 1:length(output)) {
+  DID040_value <- output[i]
+  if (((DID040_value > 2) || (DID040_value == 2)) && ((DID040_value < 78) || (DID040_value == 78))) { 
+    DID040_count_2_78 = DID040_count_2_78 + 1
+    }
+  else if (((DID040_value > 80) || (DID040_value == 80))  && ((DID040_value < 150) || (DID040_value == 150))){
+    DID040_count_80 = DID040_count_80 + 1 
+    }
+  else if (DID040_value == 666){ 
+    DID040_count_666 = DID040_count_666 + 1
+    }
+  else if (DID040_value == 777){
+    DID040_count_777 = DID040_count_777 + 1 
+    }
+  else if (DID040_value == 999){ 
+    DID040_count_999 = DID040_count_999 + 1
+    }
+}
+
+DID040_count_2_78 
+DID040_count_80
+DID040_count_666 
+DID040_count_777 
+DID040_count_999
+DID040_count_NA
+
+```
+
+From the results above, it becomes apparent that the values match those expected/indicated on the website
+
+4. DIQ160 - Ever told you have prediabetes
+
+Verifying the number of counts within the DIQ160 variable
+
+```{r DIQ160 counts}
+
+DIQ160_count_1 = 0 
+DIQ160_count_2 = 0 
+DIQ160_count_7 = 0 
+DIQ160_count_9 = 0 
+DIQ160_count_NA = 0
+
+length = nrow(diabetes_dataset)
+
+for (i in 1:length) {
+  DIQ_value <- diabetes_dataset$DIQ160[i]
+  if (!is.na(DIQ_value)){
+    if (DIQ_value == 1){ 
+       DIQ160_count_1 = DIQ160_count_1 + 1
+       }
+    else if (DIQ_value == 2){
+      DIQ160_count_2 = DIQ160_count_2 + 1 
+      }
+    else if (DIQ_value == 7){
+      DIQ160_count_7 = DIQ160_count_7 + 1 
+      }
+    else if (DIQ_value == 9){ 
+      DIQ160_count_9 = DIQ160_count_9 + 1
+      }
+    }
+  else if (is.na(DIQ_value)){
+      DIQ160_count_NA = DIQ160_count_NA + 1 
+  }
+}
+
+DIQ160_count_1
+DIQ160_count_2 
+DIQ160_count_7
+DIQ160_count_9 
+DIQ160_count_NA
+
+DIQ160_sum = DIQ160_count_1 + DIQ160_count_2 + DIQ160_count_7 + DIQ160_count_9 + DIQ160_count_NA
+DIQ160_sum
+```
+
+From the results above, it becomes apparent that the values match those expected/indicated on the website
+
+5. DIQ180 - Had blood tested past three years
+
+Verifying the number of counts within the DIQ180 variable
+
+```{r uploading file}
+
+DIQ180_count_1 = 0 
+DIQ180_count_2 = 0 
+DIQ180_count_7 = 0 
+DIQ180_count_9 = 0 
+DIQ180_count_NA = 0
+
+length = nrow(diabetes_dataset)
+
+for (i in 1:length) {
+  DIQ_value <- diabetes_dataset$DIQ180[i]
+  if (!is.na(DIQ_value)){
+    if (DIQ_value == 1){ 
+       DIQ180_count_1 = DIQ180_count_1 + 1
+       }
+    else if (DIQ_value == 2){
+      DIQ180_count_2 = DIQ180_count_2 + 1 
+      }
+    else if (DIQ_value == 7){
+      DIQ180_count_7 = DIQ180_count_7 + 1 
+      }
+    else if (DIQ_value == 9){ 
+      DIQ180_count_9 = DIQ180_count_9 + 1
+      }
+    }
+  else if (is.na(DIQ_value)){
+      DIQ180_count_NA = DIQ180_count_NA + 1 
+  }
+}
+
+DIQ180_count_1
+DIQ180_count_2 
+DIQ180_count_7
+DIQ180_count_9 
+DIQ180_count_NA
+
+DIQ180_sum = DIQ180_count_1 + DIQ180_count_2 + DIQ180_count_7 + DIQ180_count_9 + DIQ180_count_NA
+DIQ160_sum
+
+
+
+```
+
+From the results above, it becomes apparent that the values match those expected/indicated on the website
+
+6. DIQ080 - Diabetes affected eyes/had retinopathy
+
+```{r uploading file}
+
+DIQ080_count_1 = 0 
+DIQ080_count_2 = 0 
+DIQ080_count_7 = 0 
+DIQ080_count_9 = 0 
+DIQ080_count_NA = 0
+
+length = nrow(diabetes_dataset)
+
+for (i in 1:length) {
+  DIQ_value <- diabetes_dataset$DIQ080[i]
+  if (!is.na(DIQ_value)){
+    if (DIQ_value == 1){ 
+      DIQ080_count_1 = DIQ080_count_1 + 1
+       }
+    else if (DIQ_value == 2){
+      DIQ080_count_2 = DIQ080_count_2 + 1 
+      }
+    else if (DIQ_value == 7){
+      DIQ080_count_7 = DIQ080_count_7 + 1 
+      }
+    else if (DIQ_value == 9){ 
+      DIQ080_count_9 = DIQ080_count_9 + 1
+      }
+    }
+  else if (is.na(DIQ_value)){
+      DIQ080_count_NA = DIQ080_count_NA + 1 
+  }
+}
+
+DIQ080_count_1
+DIQ080_count_2 
+DIQ080_count_7
+DIQ080_count_9 
+DIQ080_count_NA
+
+DIQ080_sum = DIQ080_count_1 + DIQ080_count_2 + DIQ080_count_7 + DIQ080_count_9 + DIQ080_count_NA
+DIQ080_sum
+
+```
+
+From the results above, it becomes apparent that the values match those expected/indicated on the website
+Therefore, I have succeeded in verifying if the counts of each code or value for various variables are correct as mentioned on the website.
+
+Cleaning The Data: 
+
+1. Checking and Analyzing Column Types 
+
+```{r Checking Column Types}
+
+str(diabetes_dataset)
+sapply(diabetes_dataset, class)
+
+```
+
+From these results, it becomes apparent that all the columns are of type integer except for column DIQ280, which is numeric in nature. Looking deeper into the column DIQ280, we find the column to address the question: What was your last A1C level?. Here, it is said that soft edits are made for values that fall below 5 and any values above 14. The numeric class in R has a multitude of classes within it, the most common of which are double and integer. Here, R has the potential to automatically convert between the two classes when needed. For this specific column, since we know that the values will never be converted for doubles, they can be stored as integers; However, important information (i.e. details regarding AIC level) are gonna be missed. As a result, I have chosen to not edit the column type, although I have included code below that would allow me to do so.
+
+```{r Visual Exploratory Analysis of DIQ280}
+install.packages('plyr')
+library(plyr)
+```
+
+```{r Visual Exploratory Analysis of DIQ280}
+hist(diabetes_dataset$DIQ280)
+boxplot(diabetes_dataset$DIQ280)
+```
+
+First a visual exploratory analysis was conducted. A histogram is very useful for studying the distribution of a numeric column, helping identify the distributions nature as bi-modal or uni-modal, etc. 
+
+```{r Changing DIQ280 Column Type from Numeric to Integer}
+#class(diabetes_dataset$DIQ280)
+#diabetes_dataset$DIQ280 = as.integer(diabetes_dataset$DIQ280)
+```
+
+2. Missing Values and Outliers
+
+```{r Checking the number of missing data within the data set}
+sum(is.na(diabetes_dataset))
+```
+
+The diabetes data set contains many missing values over its 54 columns and 9575 rows. These missing values appear to be often represented by NaNs within this data set. There are multiple ways to address these missing values within the data set. 
+
+Solution 1) Emit the observations that have missing data. 
+Unfortunately, as most of the data set appears to contain missing values across a variety of columns, emitting all these values would risk loosing data points with valuable information. A better method would be to impute the missing values.  On the other hand, Outliers are those data points that do not fit with the rest of my data. Here, any data points that are too high/low/unusual need to be identified as outliers in order to be removed or modified, removing bias from the distribution.
+
+```{r Testing to emit missing data values from the dataset}
+#test_diabetes <- diabetes_dataset
+#na.omit(test_diabetes)
+#View(test_diabetes)
+```
+
+
+Solution 2) Imputing values using on mean/median values
+Here, the mean or median of the non-missing values within a column is calculated; These values for the mean are then used to replace missing values within the respective column, independently of other columns. This process can be done for all columns, but have to be done separately. Unfortunately, this method cannot be used for categorical features and as a result cannot be employed to rectify the missing values in a majority of columns. 
+
+However, when looking at certain columns it becomes apparent that this method can be used to replace the missing values. The DID040 column (i.e. Age when first told you had diabetes) contains a set of values that range from 2 to 87, while also including categorical codes. Here, a mean imputation can be conducted to account for the missing values, by replacing the values with the mean age of the population. Therefore, I first removed the categorical factors from a duplicated column and computed the mean. The mean was then used to replace the missing values within the column and repplace outlying values.  
+
+To start, the DID040 was first analyzed to test for the presence of outliers, and if outliers were found they were removed from the mean calculation and were also replaced. 
+
+```{r Testing for Outliers in the DID040 column}
+
+length = nrow(diabetes_dataset)
+DID040_output <- c()
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DID040[i]
+  if (!is.na(DID_value)){
+    if (((DID_value > 2) || (DID_value == 2)) && ((DID_value < 150) || (DID_value == 150))){ 
+      DID040_output = append(DID040_output,DID_value)
+    }
+  }
+}
+
+outlier_values = boxplot(DID040_output, plot=FALSE)$out
+boxplot(DID040_output)
+length_DID040 <- length(DID040_output)
+
+# Removing the outlying values from the calculation
+
+DID040_output_edited <- c()
+
+for (i in 1:length_DID040) {
+  value <- DID040_output[i]
+  if (value > 10){
+    DID040_output_edited <- append(DID040_output_edited,value)
+  }
+}
+
+
+```
+As a result it becomes apparent that outliers are present (since values are present below the outer bounds, i.e. . As a result a median imputation is conducetd rather than a mean imputation
+
+```{r Imputing values using on mean/median values into the DID040 column}
+# Calculating the Mean 
+mean <- round(mean(DID040_output_edited))
+
+# Replacing Missing Values in the column with the Mean 
+diabetes_dataset$DID040[is.na(diabetes_dataset$DID040)]<- mean
+
+# Replacing the Outliers in the column with the Mean 
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DID040[i]
+  if (DID_value < 10){
+    diabetes_dataset$DID040[i] <- mean
+  }
+}
+
+# Checking the edited column 
+
+View(diabetes_dataset$DID040)
+boxplot(diabetes_dataset$DID040)
+
+```
+
+Similarly, the same method can be used for the following columns where categorical values have not been used/are not used extensively: 
+
+DID060 - How long taking insulin. This column charts the no.of months/years participants have been taking insulin between a range of 1 to 55. On the other hand, the column also uses categorical values to indicate participants who have been taking insulin for less than 1 month (666), refused to say (777), and don't know (999). As a result, these values need to be removed from the column before the median is computed. 
+
+```{r Testing for Outliers in the DID060 column}
+
+DID060_output <- c()
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DID060[i]
+  if (!is.na(DID_value)){
+    if (((DID_value > 1) || (DID_value == 1)) && ((DID_value < 55) || (DID_value == 55))){ 
+      DID060_output = append(DID060_output,DID_value)
+    }
+  }
+}
+
+outlier_values = boxplot(DID060_output, plot=FALSE)$out
+boxplot(DID060_output)
+length_DID060 <- length(DID060_output)
+
+# Removing the outlying values from the Mean calculation
+
+DID060_output_edited <- c()
+
+for (i in 1:length_DID060) {
+  value <- DID060_output[i]
+  if (value < 34){
+    DID060_output_edited <- append(DID060_output_edited,value)
+  }
+}
+```
+
+```{r Imputing values using on mean/median values into the DID060 column}
+# Calculating the Mean 
+mean <- round(mean(DID060_output_edited))
+
+# Replacing Missing Values in the column with the Mean 
+diabetes_dataset$DID060[is.na(diabetes_dataset$DID060)]<- mean
+
+# Replacing the Outliers in the column with the Mean 
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DID060[i]
+  if ((DID_value > 34) && (DID_value < 55)){
+    diabetes_dataset$DID060[i] <- mean
+  }
+}
+
+# Checking the edited column 
+View(diabetes_dataset$DID060)
+
+# Visually representing 
+boxplot(diabetes_dataset$DID060)
+```
+
+DID250 - Past year how many times seen doctor. This column indicated the frequency with which participants visited their physician in the past year. As a result a mean imputation can be used to account for the missing values within the column. 
+
+```{r Testing for Outliers in the DID250 colum}
+
+DID250_output <- c()
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DID250[i]
+  if (!is.na(DID_value)){
+    if (((DID_value > 0) || (DID_value == 0)) && ((DID_value < 60) || (DID_value == 60))){ 
+      DID250_output = append(DID250_output,DID_value)
+    }
+  }
+}
+
+outlier_values = boxplot(DID250_output, plot=FALSE)$out
+boxplot(DID250_output)
+length_DID250 <- length(DID250_output)
+
+# Removing the outlying values from the Mean calculation
+
+DID250_output_edited <- c()
+
+for (i in 1:length_DID250) {
+  value <- DID250_output[i]
+  if (value < 7){
+    DID250_output_edited <- append(DID250_output_edited,value)
+  }
+}
+
+```
+
+```{r Imputing values using on mean/median values into the DID250 column}
+# Calculating the Mean 
+mean <- round(mean(DID250_output_edited))
+
+# Replacing Missing Values in the column with the Mean 
+diabetes_dataset$DID250[is.na(diabetes_dataset$DID250)]<- mean
+
+# Replacing the Outliers in the column with the Mean 
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DID250[i]
+  if ((DID_value > 8) && (DID_value < 60)){
+    diabetes_dataset$DID250[i] <- mean
+  }
+}
+
+# Checking the edited column 
+View(diabetes_dataset$DID250)
+
+# Visually representing 
+boxplot(diabetes_dataset$DID250)
+
+```
+
+DID260 - How often check blood for glucose/sugar
+
+```{r Testing for Outliers in the DID260 colum}
+
+DID260_output <- c()
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DID260[i]
+  if (!is.na(DID_value)){
+    if (((DID_value > 0) || (DID_value == 0)) && ((DID_value < 15) || (DID_value == 15))){ 
+      DID260_output = append(DID260_output,DID_value)
+    }
+  }
+}
+
+outlier_values = boxplot(DID260_output, plot=FALSE)$out
+boxplot(DID260_output)
+length_DID260 <- length(DID260_output)
+
+# Removing the outlying values from the Mean calculation
+
+DID260_output_edited <- c()
+
+for (i in 1:length_DID260) {
+  value <- DID260_output[i]
+  if ((value < 4) | (value == 4)){
+    DID260_output_edited <- append(DID260_output_edited,value)
+  }
+}
+
+```
+
+```{r Imputing values using on mean/median values into the DID260 column}
+# Calculating the Mean 
+mean <- round(mean(DID260_output_edited))
+
+# Replacing Missing Values in the column with the Mean 
+diabetes_dataset$DID260[is.na(diabetes_dataset$DID260)]<-mean
+
+# Replacing the Outliers in the column with the Mean 
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DID260[i]
+  if ((DID_value > 4) && (DID_value <= 16)) {
+    diabetes_dataset$DID260[i] <- mean
+  }
+}
+
+# Checking the edited column 
+View(diabetes_dataset$DID260)
+
+# Visually representing 
+boxplot(diabetes_dataset$DID260)
+```
+
+DIQ280 - What was your last A1C level
+
+```{r Testing for Outliers in the DIQ280 colum}
+
+DIQ280_output <- c()
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DIQ280[i]
+  if (!is.na(DID_value)){
+    if (((DID_value > 2) || (DID_value == 2)) && ((DID_value < 18.5) || (DID_value == 18.5))){ 
+      DIQ280_output = append(DIQ280_output,DID_value)
+    }
+  }
+}
+
+outlier_values = boxplot(DIQ280_output, plot=FALSE)$out
+boxplot(DIQ280_output)
+length_DIQ280 <- length(DIQ280_output)
+
+# Removing the outlying values from the Mean calculation
+
+DIQ280_output_edited <- c()
+
+for (i in 1:length_DIQ280) {
+  value <- DIQ280_output[i]
+  if ((value > 4) && (value < 10)){
+    DIQ280_output_edited <- append(DIQ280_output_edited,value)
+  }
+}
+
+```
+
+```{r Imputing the mean values into the DIQ280 column}
+
+# Calculating the Mean 
+mean <- round(mean(DIQ280_output_edited))
+
+# Replacing Missing Values in the column with the Mean 
+diabetes_dataset$DIQ280[is.na(diabetes_dataset$DIQ280)]<-mean
+
+# Replacing the Outliers in the column with the Mean 
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DIQ280[i]
+  if (((DID_value < 4) | (DID_value > 10)) && (DID_value < 19)) {
+    diabetes_dataset$DIQ280[i] <- mean
+  }
+}
+
+# Checking the edited column 
+View(diabetes_dataset$DIQ280)
+
+# Visually representing 
+boxplot(diabetes_dataset$DIQ280)
+
+```
+
+DIQ300S - What was your recent SBP
+
+```{r Testing for Outliers in the DIQ300S colum}
+
+DIQ300S_output <- c()
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DIQ300S[i]
+  if (!is.na(DID_value)){
+    if (((DID_value > 80) || (DID_value == 80)) && ((DID_value < 201) || (DID_value == 201))){ 
+      DIQ300S_output = append(DIQ300S_output,DID_value)
+    }
+  }
+}
+
+outlier_values = boxplot(DIQ300S_output, plot=FALSE)$out
+boxplot(DIQ300S_output)
+length_DIQ300S <- length(DIQ300S_output)
+
+# Removing the outlying values from the Mean calculation
+
+DIQ300S_output_edited <- c()
+
+for (i in 1:length_DIQ300S) {
+  value <- DIQ300S_output[i]
+  if ((value > 90) && (value < 170)){
+    DIQ300S_output_edited <- append(DIQ300S_output_edited,value)
+  }
+}
+
+```
+
+```{r Imputing values using on mean values into the DIQ300S column}
+# Calculating the Mean 
+mean <- round(mean(DIQ300S_output_edited))
+
+# Replacing Missing Values in the column with the Mean 
+diabetes_dataset$DIQ300S[is.na(diabetes_dataset$DIQ300S)]<-mean
+
+# Replacing the Outliers in the column with the Mean 
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DIQ300S[i]
+  if ((((DID_value < 90) | (DID_value > 170)) && (DID_value <= 201))){
+    diabetes_dataset$DIQ300S[i] <- mean
+  }
+}
+
+# Checking the edited column 
+View(diabetes_dataset$DIQ300S)
+
+# Visually representing 
+boxplot(diabetes_dataset$DIQ300S)
+
+```
+
+DIQ300D - What was your recent DBP
+
+```{r Testing for Outliers in the DIQ300D colum}
+
+DIQ300D_output <- c()
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DIQ300D[i]
+  if (!is.na(DID_value)){
+    if (((DID_value > 17) || (DID_value == 17)) && ((DID_value < 251) || (DID_value == 251))){ 
+      DIQ300D_output = append(DIQ300D_output,DID_value)
+    }
+  }
+}
+
+outlier_values = boxplot(DIQ300D_output, plot=FALSE)$out
+boxplot(DIQ300D_output)
+length_DIQ300D <- length(DIQ300D_output)
+
+# Removing the outlying values from the Mean calculation
+
+DIQ300D_output_edited <- c()
+
+for (i in 1:length_DIQ300D) {
+  value <- DIQ300D_output[i]
+  if ((value > 50) && (value < 103)){
+    DIQ300D_output_edited <- append(DIQ300D_output_edited,value)
+  }
+}
+
+```
+
+```{r Imputing the mean values into the DIQ300D column}
+
+# Calculating the Mean 
+mean <- round(mean(DIQ300D_output_edited))
+
+# Replacing Missing Values in the column with the Mean 
+diabetes_dataset$DIQ300D[is.na(diabetes_dataset$DIQ300D)]<-mean
+
+# Replacing the Outliers in the column with the Mean 
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DIQ300D[i]
+  if (((DID_value <= 50) | (DID_value >= 103)) && (DID_value <= 251)){
+    diabetes_dataset$DIQ300D[i] <- mean
+  }
+}
+
+# Checking the edited column 
+View(diabetes_dataset$DIQ300D)
+
+# Visually representing 
+boxplot(diabetes_dataset$DIQ300D)
+
+```
+
+DID310S - What does Dr say SBP should be
+
+
+```{r Testing for Outliers in the DID310S colum}
+
+DID310S_output <- c()
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DID310S[i]
+  if (!is.na(DID_value)){
+    if (((DID_value > 80) || (DID_value == 80)) && ((DID_value < 175) || (DID_value == 175))){ 
+      DID310S_output = append(DID310S_output,DID_value)
+    }
+  }
+}
+
+outlier_values = boxplot(DID310S_output, plot=FALSE)$out
+boxplot(DID310S_output)
+length_DID310S <- length(DID310S_output)
+
+# Removing the outlying values from the Mean calculation
+
+DID310S_output_edited <- c()
+
+for (i in 1:length_DID310S) {
+  value <- DID310S_output[i]
+  if ((value > 104) && (value < 149)){
+    DID310S_output_edited <- append(DID310S_output_edited,value)
+  }
+}
+
+```
+```{r Imputing the mean values into the DID310S column}
+
+# Calculating the Mean 
+mean <- round(mean(DID310S_output_edited))
+
+# Replacing Missing Values in the column with the Mean 
+diabetes_dataset$DID310S[is.na(diabetes_dataset$DID310S)]<-mean
+
+# Replacing the Outliers in the column with the Mean 
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DID310S[i]
+  if (((DID_value <= 104) | (DID_value >= 149)) && (DID_value <= 175)){
+    diabetes_dataset$DID310S[i] <- mean
+  }
+}
+
+# Checking the edited column 
+View(diabetes_dataset$DID310S)
+
+# Visually representing 
+boxplot(diabetes_dataset$DID310S)
+
+```
+
+DID310D - What does Dr say DBP should be
+
+```{r Testing for Outliers in the DID310D colum}
+
+DID310D_output <- c()
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DID310D[i]
+  if (!is.na(DID_value)){
+    if (((DID_value > 18) || (DID_value == 18)) && ((DID_value < 140) || (DID_value == 140))){ 
+      DID310D_output = append(DID310D_output,DID_value)
+    }
+  }
+}
+
+outlier_values = boxplot(DID310D_output, plot=FALSE)$out
+boxplot(DID310D_output)
+length_DID310D <- length(DID310D_output)
+
+# Removing the outlying values from the Mean calculation
+
+DID310D_output_edited <- c()
+
+for (i in 1:length_DID310D) {
+  value <- DID310D_output[i]
+  if ((value > 52) && (value < 100)){
+    DID310D_output_edited <- append(DID310D_output_edited,value)
+  }
+}
+
+```
+```{r Imputing the mean values into the DID310D column}
+
+# Calculating the Mean 
+mean <- round(mean(DID310D_output_edited))
+
+# Replacing Missing Values in the column with the Mean 
+diabetes_dataset$DID310D[is.na(diabetes_dataset$DID310D)]<-mean
+
+# Replacing the Outliers in the column with the Mean 
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DID310D[i]
+  if (((DID_value <= 52) | (DID_value >= 100)) && (DID_value <= 140)){
+    diabetes_dataset$DID310D[i] <- mean
+  }
+}
+
+# Checking the edited column 
+View(diabetes_dataset$DID310D)
+
+# Visually representing 
+boxplot(diabetes_dataset$DID310D)
+
+```
+
+DID320 - What was most recent LDL number
+
+```{r Testing for Outliers in the DID320 colum}
+
+DID320_output <- c()
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DID320[i]
+  if (!is.na(DID_value)){
+    if (((DID_value > 4) || (DID_value == 4)) && ((DID_value < 520) || (DID_value == 520))){ 
+      DID320_output = append(DID320_output,DID_value)
+    }
+  }
+}
+
+outlier_values = boxplot(DID320_output, plot=FALSE)$out
+boxplot(DID320_output)
+length_DID320 <- length(DID320_output)
+
+# Removing the outlying values from the Mean calculation
+
+DID320_output_edited <- c()
+
+for (i in 1:length_DID320) {
+  value <- DID320_output[i]
+  if (value < 300){
+    DID320_output_edited <- append(DID320_output_edited,value)
+  }
+}
+
+```
+
+
+```{r Imputing the mean values into the DID320 column}
+
+# Calculating the Mean 
+mean <- round(mean(DID320_output_edited))
+
+# Replacing Missing Values in the column with the Mean 
+diabetes_dataset$DID320[is.na(diabetes_dataset$DID320)]<-round(mean(DID320_output_edited))
+
+# Replacing the Outliers in the column with the Mean 
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DID320[i]
+  if ((DID_value >= 300) && (DID_value <= 520)){
+    diabetes_dataset$DID320[i] <- round(mean(DID320_output_edited))
+  }
+}
+
+# Checking the edited column 
+View(diabetes_dataset$DID320)
+
+# Visually representing 
+boxplot(diabetes_dataset$DID320)
+
+```
+DID330 - What does Dr say LDL should be
+
+```{r Testing for Outliers in the DID330 colum}
+
+DID330_output <- c()
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DID330[i]
+  if (!is.na(DID_value)){
+    if (((DID_value > 6) || (DID_value == 6)) && ((DID_value < 205) || (DID_value == 205))){ 
+      DID330_output = append(DID330_output,DID_value)
+    }
+  }
+}
+
+outlier_values = boxplot(DID330_output, plot=FALSE)$out
+boxplot(DID330_output)
+length_DID330 <- length(DID330_output)
+
+# Removing the outlying values from the Mean calculation
+
+DID330_output_edited <- c()
+
+for (i in 1:length_DID330) {
+  value <- DID330_output[i]
+  if ((value > 40) && (value < 190)){
+    DID330_output_edited <- append(DID330_output_edited,value)
+  }
+}
+
+```
+```{r Imputing the mean values into the DID330 column}
+
+# Calculating the Mean 
+mean <- round(mean(DID330_output_edited))
+
+# Replacing Missing Values in the column with the Mean 
+diabetes_dataset$DID330[is.na(diabetes_dataset$DID330)]<-round(mean(DID330_output_edited))
+
+# Replacing the Outliers in the column with the Mean 
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DID330[i]
+  if (((DID_value < 40) | (DID_value > 190)) && (DID_value <= 205)){
+    diabetes_dataset$DID330[i] <- round(mean(DID330_output_edited))
+  }
+}
+
+# Checking the edited column 
+View(diabetes_dataset$DID330)
+
+# Visually representing 
+boxplot(diabetes_dataset$DID330)
+
+```
+
+DID341 - Past year times Dr check feet for sores
+
+```{r Testing for Outliers in the DID341 colum}
+
+DID341_output <- c()
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DID341[i]
+  if (!is.na(DID_value)){
+    if (((DID_value > 1) || (DID_value == 1)) && ((DID_value < 34) || (DID_value == 34))){ 
+      DID341_output = append(DID341_output,DID_value)
+    }
+  }
+}
+
+outlier_values = boxplot(DID341_output, plot=FALSE)$out
+boxplot(DID341_output)
+length_DID341 <- length(DID341_output)
+
+# Removing the outlying values from the Mean calculation
+
+DID341_output_edited <- c()
+
+for (i in 1:length_DID330) {
+  value <- DID341_output[i]
+  if (value < 9){
+    DID341_output_edited <- append(DID341_output_edited,value)
+  }
+}
+
+```
+```{r Imputing the mean values into the DID341 column}
+
+# Calculating the Mean 
+mean <- round(mean(DID341_output_edited))
+
+# Replacing Missing Values in the column with the Mean 
+diabetes_dataset$DID341[is.na(diabetes_dataset$DID341)]<-round(mean(DID341_output_edited))
+
+# Replacing the Outliers in the column with the Mean 
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DID341[i]
+  if (DID_value <= 9) {
+    diabetes_dataset$DID341[i] <- round(mean(DID341_output_edited))
+  }
+}
+
+# Checking the edited column 
+View(diabetes_dataset$DID341)
+
+# Visually representing 
+boxplot(diabetes_dataset$DID341)
+
+```
+
+DID350 - How often do you check your feet
+
+```{r Testing for Outliers in the DID350 colum}
+
+DID350_output <- c()
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DID341[i]
+  if (!is.na(DID_value)){
+    if (((DID_value > 1) || (DID_value == 1)) && ((DID_value < 20) || (DID_value == 20))){ 
+      DID350_output = append(DID350_output,DID_value)
+    }
+  }
+}
+
+outlier_values = boxplot(DID350_output, plot=FALSE)$out
+boxplot(DID350_output)
+length_DID350 <- length(DID350_output)
+
+# Removing the outlying values from the Mean calculation
+
+DID350_output_edited <- c()
+
+for (i in 1:length_DID350) {
+  value <- DID350_output[i]
+  if (value < 10){
+    DID350_output_edited <- append(DID350_output_edited,value)
+  }
+}
+
+```
+
+```{r Imputing the mean values into the DID350 column}
+
+# Calculating the Mean 
+mean <- round(mean(DID350_output_edited))
+
+# Replacing Missing Values in the column with the Mean 
+diabetes_dataset$DID350[is.na(diabetes_dataset$DID350)]<- mean
+
+# Replacing the Outliers in the column with the Mean 
+
+for (i in 1:length) {
+  DID_value <- diabetes_dataset$DID350[i]
+  if ((DID_value >= 9) && (DID_value <= 20)) {
+    diabetes_dataset$DID350[i] <- mean
+  }
+}
+
+# Checking the edited column 
+View(diabetes_dataset$DID350)
+
+# Visually representing 
+boxplot(diabetes_dataset$DID350)
+
+```
+Therefore, by identifying the outliers I have been able to accurately compute the mean for the continuous variables within the dataset and have 
+
+Solution 3) Imputing values using most frequent/zero/constant values 
+This method works well for columns containing categorical data. When using frequent values, the missing values within a column are replaces with the most frequent values within the column. However, the correlations between the categorical values are not considered. On the other hand, zero or constant imputation uses zero or a constant value provided to replace all missing values within a column. This process has the potential to introduce bias within the data. 
+
+```{r Imputing zero's }
+
+test_diabetes_0 <- diabetes_dataset
+test_diabetes_0[is.na(test_diabetes_0)]<- 0
+View(test_diabetes_0)
+
+```
+
+From the results, it becomes apparent that imputation with zero's will influence the data set heavily; As a result, this method is not prefered and will not be used to help clean up the data. 
+
+Solution 4) Imputation using K nearest neighbors
+
+KNN is an algorithm that is used to match a data point with it's closest 'k' neighbors in a multi-dimensional space. KNN is useful as it can be used for categorical values to replace missing data. Using the KNN method, a categorical missing value is imputed with a majority of its nearest k neighbors, and the mean of the nearest k members is used as the preduction for the missing value. 
+
+For the following columns I used KNN to account for the missing data as mean imputation cannot be used for categorical values. KNN appears to be the best method I could employ to account for the missing data without removing the data. 
+
+```{r Loading requried packages for KNN imputation}
+install.packages("VIM")
+
+library("VIM")
+```
+
+```{r Imputing for missing values using knn imputation}
+
+colnames(diabetes_dataset)
+
+# Using kNN imputation to replace missing values in DIQ160 - Ever told you have prediabetes
+
+diabetes_dataset <- kNN(diabetes_dataset,variable = c("DIQ160"), k = 10)
+
+# Using kNN imputation to replace missing values in DIQ170 - Ever told have health risk for diabetes
+
+diabetes_dataset <- kNN(diabetes_dataset,variable = c("DIQ170"), k = 10)
+
+# Using kNN imputation to replace missing values in DIQ172 - Feel could be at risk for diabetes
+
+diabetes_dataset <- kNN(diabetes_dataset,variable = c("DIQ172"), k = 10)
+
+# Using kNN imputation to replace missing values in DIQ175A - Family history
+
+diabetes_dataset <- kNN(diabetes_dataset,variable = c("DIQ175A"), k = 10)
+
+# Using kNN imputation to replace missing values in DIQ180 - Had blood tested past three years
+
+diabetes_dataset <- kNN(diabetes_dataset,variable = c("DIQ180"), k = 10)
+
+# Using kNN imputation to replace missing values in DIQ050 - Taking insulin now
+
+diabetes_dataset <- kNN(diabetes_dataset,variable = c("DIQ050"), k = 10)
+
+# Using kNN imputation to replace missing values in DIQ060U - Unit of measure (month/year)
+
+diabetes_dataset <- kNN(diabetes_dataset,variable = c("DIQ060U"), k = 10)
+
+# Using kNN imputation to replace missing values in DIQ070 - Take diabetic pills to lower blood sugar
+
+diabetes_dataset <- kNN(diabetes_dataset,variable = c("DIQ070"), k = 10)
+
+# Using kNN imputation to replace missing values in DIQ230 - How long ago saw a diabetes specialist
+
+diabetes_dataset <- kNN(diabetes_dataset,variable = c("DIQ230"), k = 10)
+
+# Using kNN imputation to replace missing values in DIQ240 - Is there one Dr you see for diabetes
+
+diabetes_dataset <- kNN(diabetes_dataset,variable = c("DIQ240"), k = 10)
+
+# Using kNN imputation to replace missing values in DIQ260U - Unit of measure (day/week/month/year)
+
+diabetes_dataset <- kNN(diabetes_dataset,variable = c("DIQ260U"), k = 10)
+
+# Using kNN imputation to replace missing values in DIQ275 - Past year Dr checked for A1C
+
+diabetes_dataset <- kNN(diabetes_dataset,variable = c("DIQ275"), k = 10)
+
+# Using kNN imputation to replace missing values in DIQ291 - What does Dr say A1C should be
+
+diabetes_dataset <- kNN(diabetes_dataset,variable = c("DIQ291"), k = 10)
+
+# Using kNN imputation to replace missing values in DIQ350U - Unit of measure (day/week/month/year)
+
+diabetes_dataset <- kNN(diabetes_dataset,variable = c("DIQ350U"), k = 10)
+
+# Using kNN imputation to replace missing values in DIQ360 - Last time had pupils dilated for exam
+
+diabetes_dataset <- kNN(diabetes_dataset,variable = c("DIQ360"), k = 10)
+
+# Using kNN imputation to replace missing values in DIQ080 - Diabetes affected eyes/had retinopathy
+
+diabetes_dataset <- kNN(diabetes_dataset,variable = c("DIQ080"), k = 10)
+
+```
+
+
+3. Data Gathering and Spreading
+
+From looking at the data, it quickly became apparent that a number of columns contained answers to the same type of question: "Why {Do you/Does SP} think {you are/he is/she is} at risk for diabetes or prediabetes? [Anything else?]". Here, the columns (DIQ175B - DIQ175X - Polycystic ovarian syndrome) contained the same question where the presence of a code (i.e Overweight - 17, Polycystic ovarian syndrome - 33) acknowledged that either the researcher or participant felt like that particular characteristic (i.e. Race) made them predisposed to diabetes or prediabetes. The missing values here cannot be imputed by either mean imputation or knn imputation; As a result, I have decided to gather the data from the various columns under one column to better analyze the trends. 
+
+
+```{r Loading requried packages for Gathering and Spreading}
+install.packages("tidyr")
+
+library("tidyr")
+```
+
+```{r Gathering Data from a number of columns}
+
+diabetes_dataset_gathered <- gather(diabetes_dataset, key = "Query", value = "Value",  DIQ175B, DIQ175C,DIQ175D,DIQ175D, DIQ175E, DIQ175F, DIQ175G, DIQ175H, DIQ175I, DIQ175J, DIQ175K, DIQ175L, DIQ175M, DIQ175N, DIQ175O, DIQ175P, DIQ175Q, DIQ175R, DIQ175S, DIQ175T, DIQ175U, DIQ175V, DIQ175W, DIQ175X)
+
+View(diabetes_dataset_gathered)
+
+```
+
+4. Deleting all the rows with NA values 
+
+This was done to help reduce the amount of copied data while also removing null values
+
+```{r Deleting all the rows with NA values}
+
+diabetes_dataset_final <- na.omit(diabetes_dataset_gathered)
+View(diabetes_dataset_final)
+
+```
+
+5. Creating PHI fields
+
+PHI fields are characteristics that refer to the personal health information (PHI). Within this data set, there is potential for the creation of PHI fields. For example, the age at which patients were diagnosed is a key characteristic of their illness and can therefore be regarded as an PHI field. 
+
+```{r Installing Packages}
+install.packages("encryptr")
+install.packages("dplyr")
+
+library("encryptr")
+library("dplyr")
+```
+
+```{r Protecting DID040: The age when patients were first told they had diabetes}
+
+diabetes_dataset_final_encrypted <- diabetes_dataset_final %>% 
+  select(-c(DIQ160_imp,DIQ170_imp,DIQ172_imp,DIQ175A_imp,DIQ180_imp,DIQ050_imp,DIQ060U_imp,DIQ070_imp,DIQ230_imp,DIQ240_imp,DIQ260U_imp,DIQ275_imp,DIQ291_imp,DIQ350U_imp,DIQ360_imp,DIQ080_imp)) %>% 
+  encrypt(DID040)
+
+View(diabetes_dataset_final_encrypted)
+
+```
+
+```{r Decrypting DID040}
+
+diabetes_dataset_final_encrypted %>%  
+  decrypt(DID040)
+
+```
+
+6. Conforming Data Codes with Descriptive Terms
+
+For a set of the columns, i.e. DIQ175B - Overweight - DIQ175X - Polycystic ovarian syndrome, all the columns contained different code values which did little to describe the information within the columns. Here code values (i.e. 11 - 33) were used to indicate where participants felt that certain attributes (i.e. overweight or polycystic ovarian syndrome) increased their risk for diabetes or pre-diabetes. Therefore, it would be more effective if these values were changed to more descriptive terms (i.e. "Yes"). 
+
+```{r Conforming Data Codes with Descriptive Terms}
+
+# Not Necessary 
+
+```
+
+However, this change is not necessary now that the columns with the same questions have been gathered. Therefore, this document highlights the all the challenges I found within the data set and illustrates the different methods I employed to validate, modify and present the data.  
+
+```{r Viewing Final Table Code}
+
+View(diabetes_dataset_final_encrypted)
+
+```
+
+
