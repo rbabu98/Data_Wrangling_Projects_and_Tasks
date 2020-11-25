@@ -1,0 +1,241 @@
+---
+title: "Homework 3"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Question 1) 
+
+```{r Question 1) Setting up the given data}
+
+if (!require('tidyverse')) 
+{
+  library("tidyverse")
+  install.packages("dplyr")
+  library("dplyr")
+}
+
+```
+
+```{r Question 1 Given Data )}
+
+# Pulling the tables and setting up the data
+table2
+table4a
+table4b
+
+# Fidning the length of the table
+length = nrow(table2)
+
+```
+
+```{r Part A Table 2}
+
+# Filtering table 2 to create a table with only the cases
+table2_cases <- filter(table2,type == 'cases') 
+View(table2_cases)
+
+```
+
+```{r Part B Table 2}
+
+# Filtering table 2 to create a table with only the population
+table2_population <- filter(table2,type == 'population')
+View(table2_population)
+
+```
+
+```{r Part C and D Table 2}
+
+# Joining the tables together by country and year
+table2_cases_population <- left_join(table2_cases,table2_population, by=c("country","year"))
+
+# Calculating the rate, while simultaneously storing the data points within a new column
+table2_cases_population_rate <- table2_cases_population %>% mutate(rate = (count.x/count.y) *10000)
+
+# Renaming the columns
+table2_cases_population_rate <- table2_cases_population_rate %>% rename(cases = count.x)
+table2_cases_population_rate <- table2_cases_population_rate %>% rename(population = count.y)
+
+# Viewing the table
+table2_cases_population_rate
+
+```
+
+```{r Part A and B for Table 4A and Table4B}
+
+# Gathering the given data by cases for the years 1999-2000
+table4a_cases <- gather(table4a,"year","cases", "1999":"2000")
+View(table4a_cases)
+
+# Gathering the given data by population for the years 1999-2000
+table4b_population <- gather(table4b,"year","population", "1999":"2000")
+View(table4b_population)
+
+```
+
+```{r Part C and D for Tables 4A and 4B}
+
+# Merging the tables along country and year
+table4a_4b_merge <- left_join(table4a_cases,table4b_population, by=c("country","year"))
+
+# Calculating the rate, while simultaneously storing the data points within a new column
+table4a_4b_merge_rate <- table4a_4b_merge %>% mutate(rate = (cases/population) *10000)
+
+# Viewing the table
+View(table4a_4b_merge_rate)
+
+```
+
+Therefore, there are two ways to calculate the rate of the disease for the 3 countries per year. The first method indicated how the table 2 data can be filtered and subsequently mutated to find the rate of the disease (tuberculosis) per year for the different countries. On the other hand, the second method combines the data from two tables (4a and 4b) which cantain information regarding either the population or the cases for a country by year. Therefore, the data has to be combined and gathered from the two tables and then mutated. Both these methods have been illustrated above.
+
+# Question 2) 
+
+```{r Question 2}
+
+#table4a %>% gather(1999,2000,key="year",value="cases")
+
+```
+The error message produced by this code block is as follows: "Error: Can't subset columns that don't exist. x Locations 1999 and 2000 don't exist. There are only 3 columns"; Therefore, it becomes apparent from looking at documentation concerning the gather function, that 4 arguments were provided concerning only 3 columns. As a result, this error was produced. Here the gather function within the dplyr library needs to be used in the following way, with the appropriate syntax: 
+
+```{r Question 2 Corrected Syntax}
+
+table4a %>% gather(key="year",value="cases", "1999":"2000")
+
+```
+Looking at the syntax above, it becomes clear why the error message was initially displayed. With the original syntax, errors occured as the code was attempting to subset into columns '1999' and '2000'. As these columns did not exist an error was returned. On the other hand, with the corrected syntax, the data points were gathered for 'year' and 'cases' between the values 1999-2000. Therefore, the original code fails, while the corrected code succeeds. 
+
+# Question 3) 
+
+```{r Question 3) Setting up the given data}
+
+if (!require('nycflights13') | !require('dplyr') | !require('plyr') ) 
+{
+  library("nycflights13")
+  install.packages("dplyr")
+  library("dplyr")
+  install.packages("plyr")
+  library("plyr")
+  install.packages("ggplot2")
+  library("ggplot2")
+}
+
+```
+
+```{r Question 3 Part A}
+
+# Gathering the given data
+flights
+
+# Grouping the flights data within a new data set
+flights_df <- flights %>%
+  group_by(year, month, day)
+
+# Selecting columns to work with
+flights_df <- flights_df %>%
+  select(year, month, day, dep_time, sched_dep_time, dep_delay, air_time, hour, minute, time_hour)
+
+# Uniting and converting into date columns
+flights_df <- flights_df %>%
+  unite("dep_day_edited", year, month, day) %>%
+  mutate(dep_day_edited = as.Date(dep_day_edited, format="%Y_%m_%d"))
+
+# Converting column type into integer
+flights_df <- transform(flights_df, air_time=as.integer(air_time))
+
+# Finding the mean flight time per hour
+flights_3a <- ddply(flights_df, .(time_hour), summarize, mean = mean(air_time))
+
+# Extracting only the unique values
+flights_3a <- unique(flights_3a)
+
+# Plotting the trends observed
+plot(flights_3a$time_hour, flights_3a$mean)
+
+
+```
+
+```{r Question 3 Part B}
+# To prove that dep_time, sched_dep_time and dep_delay are consistent I need to verify that the dep_time is always equal to the sum of the sched_dep_time and dep_delay
+
+# Created a new variable called ver_dep_time 
+flights_v <- flights %>% 
+  mutate(ver_dep_time = sched_dep_time + dep_delay)
+
+# Filter for those rows where dep_time and ver_dep_time match
+flights_vr <- flights_v %>% 
+  filter(ver_dep_time == dep_time)
+
+# Count of mismatches
+count_mismatch = nrow(flights_v) - nrow(flights_vr)
+count_mismatch
+
+# Filter for those rows where dep_time and ver_dep_time do not match 
+flights_ur <- flights_v %>% 
+  filter(ver_dep_time != dep_time)
+
+flights_ur
+# Therefore, it becomes apparent that there are discrepancies between the dep_time, sched_dep_time and dep_delay for a large section of the values. Here the dep_time does not match the sum of the dep_delay with the sched_dep_time; As a result, these columns are not fully consistent with one another. 
+```
+
+```{r Question 3 Part C Hypothesis Confirmation}
+# To start, I created a binary variable that will be used to help tell me if a flight was delayed or not
+ flights_b <- flights %>% 
+  mutate(delayed = case_when(dep_delay < 0 ~ 1, 
+                             dep_delay > 0 ~ 0))
+  
+# Next I grouped the data by minutes
+flights_b <- flights_b %>% 
+  group_by(minute)
+  
+# I removed NA values
+flights_b <- flights_b %>% 
+  filter(!is.na(delayed))
+
+# Filtered the data for minutes between 20:30 and 50:60
+flights_b <- filter(flights_b, (minute == (20:30)) | (minute == (50:60)))
+
+# I found the percent of early departure for each minute of departure. Here, the flights_sch table indicates the proportion of flights that left early for each minute of departurre bwteen 20 and 30 and 50 and 60  
+
+flights_s <- ddply(flights_b, .(time_hour), summarize, mean = mean(delayed))
+
+flights_s <- transform(flights_s, round(mean=as.numeric(mean)),2)
+
+# Sample Alternative Code
+# flights_s <- flights_b %>% summarise(percentage = mean(delayed))
+
+# Visual Representation of the data
+#plot(flights_s$minute, flights_s$percentage)
+
+# Finding the percentage of delay for flights 
+
+count_1_df <-  flights_b %>% 
+  filter(delayed == 1)
+
+count_1 <- nrow(count_1_df)
+
+count_0_df <-  flights_b %>% 
+  filter(delayed == 0)
+
+count_0 <- nrow(count_0_df)
+count_0 + count_1
+
+percentage = (count_1/nrow(flights_b))*100
+percentage
+
+# Confirming that those early departures between minutes 20-30 and 50-60 are caused by scheduled flights that leave early
+flights_sch <- filter(flights_b, (dep_delay < 0))
+flights_sch
+
+# Therefore, it becomes apparent that the early departures of flights in minutes 20-30 and 50-60 are caused by scheduled flights that leave early. Therefore, the hypothesis is confirmed. 
+
+```
+
+
