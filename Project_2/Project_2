@@ -1,0 +1,341 @@
+install.packages('sqldf')
+install.packages('RODBC')
+library('sqldf')
+library('RODBC')
+my_connection <- odbcConnect('qbs181', uid = 'rababu', pwd = 'rababu@qbs181',)
+
+# Question 1 
+
+extracted_PhoneCall <- sqlQuery(my_connection, "SELECT * FROM PhoneCall_Encounter")
+enrollment_group <- c()
+length = nrow(extracted_PhoneCall)
+for (i in 1:length) {
+ EncounterCode <- extracted_PhoneCall$EncounterCode[i]
+ if (EncounterCode == 125060000 ) {
+ enrollment_group <- append(enrollment_group,"Clinical Alert")
+ }
+ else if (EncounterCode == 125060001){
+ enrollment_group <- append(enrollment_group,"Health Coaching")
+ }
+ else if (EncounterCode == 125060002){
+ enrollment_group <- append(enrollment_group,"Technical Question")
+ }
+ else if (EncounterCode == 125060003){
+ enrollment_group <- append(enrollment_group,"Administrative")
+ }
+ else if (EncounterCode == 125060004){
+ enrollment_group <- append(enrollment_group,"Other")
+ }
+ else if (EncounterCode == 125060005){
+ enrollment_group <- append(enrollment_group,"Lack of engagement")
+ }
+ else{
+ enrollment_group <- append(enrollment_group,NULL)
+ }
+}
+extracted_PhoneCall$EnrollmentGroup <- enrollment_group
+extracted_PhoneCall
+
+# Question 2
+
+count_0 = 0
+count_1 = 0
+count_2 = 0
+count_3 = 0
+count_4 = 0
+count_5 = 0
+for (i in 1:length) {
+ enrollment <- extracted_PhoneCall$EnrollmentGroup[i]
+ if (enrollment == "Clinical Alert"){
+ count_0 = count_0 + 1
+ }
+ else if (enrollment == "Health Coaching"){
+ count_1 = count_1 + 1
+ }
+ else if (enrollment == "Technical Question"){
+ count_2 = count_2 + 1
+ }
+ else if (enrollment == "Administrative"){
+ count_3 = count_3 + 1
+ }
+ else if (enrollment == "Other"){
+ count_4 = count_4 + 1
+ }
+ else if (enrollment == "Lack of engagement"){
+ count_5 = count_5 + 1
+ }
+}
+count_0
+count_1
+count_2
+count_3
+count_4
+count_5
+
+# Question 3
+
+install.packages('dplyr')
+library(dplyr)
+
+extracted_CallDuration <- sqlQuery(my_connection, "SELECT * FROM CallDuration")
+
+colnames(extracted_CallDuration) <- c("CustomerId","CallType","CallDuration","CallOutcome")
+merge_phoneduration <- sqldf("select * from extracted_CallDuration dur inner join extracted_PhoneCall encount on dur.CustomerId = encount.CustomerId")
+nrow(merge_phoneduration)
+
+# Question 4
+
+n = nrow(merge_phoneduration)
+n
+ct_1_count = 0
+ct_2_count = 0
+call_type_v <- c()
+for (i in 1:n) {
+ calltype <- merge_phoneduration$CallType[i]
+ if (calltype == 1 ){
+ call_type_v <- append(call_type_v,"Inbound")
+ ct_1_count = ct_1_count + 1
+ }
+ else if (calltype == 2){
+ call_type_v <- append(call_type_v,"Outbound")
+ ct_2_count = ct_2_count + 1
+ }
+}
+ct_1_count
+ct_2_count
+co_1_count = 0
+co_2_count = 0
+co_3_count = 0
+call_outcome_v <- c()
+for (i in 1:n) {
+ calloutcome <- merge_phoneduration$CallOutcome[i]
+ if (calloutcome == 1){
+ call_outcome_v <- append(call_outcome_v,"No Response")
+ co_1_count = co_1_count + 1
+ }
+ else if (calloutcome == 2){
+ call_outcome_v <- append(call_outcome_v,"Left Voicemail")
+ co_2_count = co_2_count + 1
+ }
+ else if (calloutcome == 3){
+ call_outcome_v <- append(call_outcome_v,"Successful")
+ co_3_count = co_3_count + 1
+ }
+}
+co_1_count
+co_2_count
+co_3_count
+merge_phoneduration$Call_Type <- call_type_v
+merge_phoneduration$Call_Outcome <- call_outcome_v
+merge_phoneduration
+l = nrow(merge_phoneduration)
+sum_call_duration <- function(int){
+ sum = 0
+ for (i in 1:l){
+ encountergroup <- merge_phoneduration$EncounterCode[i]
+ if (int == encountergroup){
+ sum = sum + merge_phoneduration$CallDuration[i]
+ }
+ }
+ return(sum)
+}
+
+merge_phoneduration
+
+sum_call_duration(125060000)
+sum_call_duration(125060001)
+sum_call_duration(125060002)
+sum_call_duration(125060003)
+sum_call_duration(125060004)
+sum_call_duration(125060005)
+
+# Question 5
+
+extracted_Demographics <- sqlQuery(my_connection, "SELECT * FROM Demographics")
+extracted_Conditions <- sqlQuery(my_connection, "SELECT * FROM Conditions")
+extracted_TextMessages <- sqlQuery(my_connection, "SELECT * FROM Text")
+
+# Merging the 3 Tables
+
+merge_demographicsconditions <- sqldf("select * from extracted_Demographics dem inner join extracted_Conditions encount on dem.contactid = encount.tri_patientid")
+merge_3_tables <- sqldf("select * from merge_demographicsconditions dem inner join extracted_TextMessages encount on dem.contactid = encount.tri_contactId")
+merge_3_tables$TextSentDate <- as.Date(merge_3_tables$TextSentDate, format="%Y-%m-%d" )
+week_number <- strftime(merge_3_tables$TextSentDate, format="%V")
+
+# Code provided during office hours
+
+merge_3_tables$week_number <- week_number
+texts_week <- sqldf("select SenderName, week_number, count(contactid) from merge_3_tables
+group by SenderName, week_number")
+
+Texts_week
+
+# Question 6
+
+texts_week_conditions <- sqldf("select tri_name, week_number, count(contactid) from merge_3_tables group by tri_name, week_number")
+texts_week_conditions
+
+# Additional Code for Q 5/6
+# Initially I calculated the average number of texts per week for each category when answering both 5 and 6. I have included my code below to show my working.
+
+# Initial Question 5
+
+View(merge_3_tables)
+
+l_2 = nrow(merge_3_tables)
+sender_vector <- function(sender){
+ output <- c()
+ for (i in 1:l_2){
+ sendername <- merge_3_tables$SenderName[i]
+ if (sender == sendername){
+ output = append(output, merge_3_tables$TextSentDate[i])
+ }
+ }
+ return(output)
+}
+
+clinicial_vector <- sender_vector("Clinician")
+customer_vector <- sender_vector("Customer")
+system_vector <- sender_vector("System")
+
+# Total number of weeks per sender
+max_cl <- max(clinicial_vector)
+min_cl <- min(clinicial_vector)
+
+clinical_dates = c(max_cl, min_cl)
+clincal_dates_edited = strptime(clinical_dates, format = "%Y-%m-%d")
+clinical_diff_weeks = difftime(clincal_dates_edited[1], clincal_dates_edited[2], units = "weeks")
+clinical_diff_weeks
+
+max_cu <- max(customer_vector)
+min_cu <- min(customer_vector)
+
+customer_dates = c(max_cu, min_cu)
+customer_dates_edited = strptime(customer_dates, format = "%Y-%m-%d")
+customer_diff_weeks = difftime(customer_dates_edited[1], customer_dates_edited[2], units = "weeks")
+customer_diff_weeks
+
+max_sys <- max(system_vector)
+min_sys <- min(system_vector)
+
+system_dates = c(max_sys, min_sys)
+system_dates_edited = strptime(system_dates, format = "%Y-%m-%d")
+system_diff_weeks = difftime(system_dates_edited[1], system_dates_edited[2], units = "weeks")
+system_diff_weeks
+
+# Count of texts by sender
+
+count_texts <- function(sender){
+ count = 0
+ for (i in 1:l_2){
+ sendername <- merge_3_tables$SenderName[i]
+ if (sender == sendername){
+ count = count + 1
+ }
+ }
+ return(count)
+}
+
+clinical_texts <- count_texts("Clinician")
+customer_texts <- count_texts("Customer")
+system_texts <- count_texts("System")
+
+# Number of texts/number of weeks
+no_texts_clinical_week = clinical_texts/as.double(clinical_diff_weeks)
+no_texts_clinical_week
+no_texts_customer_week = customer_texts/as.double(customer_diff_weeks)
+no_texts_customer_week
+no_texts_system_week = system_texts/as.double(system_diff_weeks)
+no_texts_system_week
+
+# Initial Question 6
+
+chronic_condition_vector <- function(condition){
+ output <- c()
+ for (i in 1:l_2){
+ conditionname <- merge_3_tables$tri_name[i]
+ if (condition == conditionname){
+ output = append(output, merge_3_tables$TextSentDate[i])
+ }
+ }
+ return(output)
+}
+
+am_vector <- chronic_condition_vector("Activity Monitoring")
+chf_vector <- chronic_condition_vector("Congestive Heart Failure")
+copd_vector <- chronic_condition_vector("COPD")
+diabetes_vector <- chronic_condition_vector("Diabetes")
+hypertension_vector <- chronic_condition_vector("Hypertension")
+
+# Total number of weeks per chronic condition
+
+max_am <- max(am_vector)
+min_am <- min(am_vector)
+am_dates = c(max_am, min_am)
+am_dates_edited = strptime(am_dates, format = "%Y-%m-%d")
+am_diff_weeks = difftime(am_dates_edited[1], am_dates_edited[2], units = "weeks")
+am_diff_weeks
+
+max_chf <- max(chf_vector)
+min_chf <- min(chf_vector)
+chf_dates = c(max_chf, min_chf)
+chf_dates_edited = strptime(chf_dates, format = "%Y-%m-%d")
+chf_diff_weeks = difftime(chf_dates_edited[1], chf_dates_edited[2], units = "weeks")
+chf_diff_weeks
+
+max_copd <- max(copd_vector)
+min_copd <- min(copd_vector)
+copd_dates = c(max_copd, min_copd)
+copd_dates_edited = strptime(copd_dates, format = "%Y-%m-%d")
+copd_diff_weeks = difftime(copd_dates_edited[1], copd_dates_edited[2], units = "weeks")
+copd_diff_weeks
+
+max_diabetes <- max(diabetes_vector)
+min_diabetes <- min(diabetes_vector)
+diabetes_dates = c(max_diabetes, min_diabetes)
+diabetes_dates_edited = strptime(diabetes_dates, format = "%Y-%m-%d")
+diabetes_diff_weeks = difftime(diabetes_dates_edited[1], diabetes_dates_edited[2], units = "weeks")
+diabetes_diff_weeks
+
+max_hypertension <- max(hypertension_vector)
+min_hypertension <- min(hypertension_vector)
+hypertension_dates = c(max_hypertension, min_hypertension)
+hypertension_dates_edited = strptime(hypertension_dates, format = "%Y-%m-%d")
+hypertension_diff_weeks = difftime(hypertension_dates_edited[1], hypertension_dates_edited[2], units = "weeks")
+hypertension_diff_weeks
+
+# Count of texts by chronic condition
+
+count_condition <- function(condition){
+ count = 0
+ for (i in 1:l_2){
+ conditionname <- merge_3_tables$tri_name[i]
+ if (condition == conditionname){
+ count = count + 1
+ }
+ }
+ return(count)
+}
+
+am_counts <- count_condition("Activity Monitoring")
+chf_counts <- count_condition("Congestive Heart Failure")
+copd_counts <- count_condition("COPD")
+diabetes_counts <- count_condition("Diabetes")
+hypertension_counts <- count_condition("Hypertension")
+
+# Number of texts/number of weeks
+
+no_texts_am_week = am_counts/as.double(am_diff_weeks)
+no_texts_am_week
+
+no_texts_chf_week = chf_counts/as.double(chf_diff_weeks)
+no_texts_chf_week
+
+no_texts_copd_week = copd_counts/as.double(copd_diff_weeks)
+no_texts_copd_week
+
+no_texts_diabetes_week = diabetes_counts/as.double(diabetes_diff_weeks)
+no_texts_diabetes_week
+
+no_texts_hypertension_week = hypertension_counts/as.double(hypertension_diff_weeks)
+no_texts_hypertension_week
