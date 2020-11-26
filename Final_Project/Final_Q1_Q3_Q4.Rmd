@@ -1,0 +1,277 @@
+---
+title: "Data Wrangling Final"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+# Rahul Babu
+# QBS 181 Final
+
+# Question 1 Blood Pressure and Demographics Data 
+
+```{r Setting up a working directory}
+
+setwd("C:/Users/r9492/OneDrive/Desktop")
+
+```
+
+```{r Question 1 Loading File }
+
+data <- read.csv(file = 'IC_BP_v2.csv')
+
+```
+
+# Part A) Convert BP alerts to BP status
+
+```{r Question 1 Part A Loading Packages}
+
+if (!require('dplyr')) 
+{
+  install.packages("dplyr")
+  library("dplyr")
+  install.packages("lazyeval")
+  library("lazyeval")
+}
+
+if (!require('tidyr')) 
+{
+  install.packages("tidyr")
+  library("tidyr")
+}
+
+```
+
+```{r Question 1 Part A}
+
+# Creating 2 Data Sets
+data_2 <- data
+
+# Creating and copying a new column for BP Status 
+#data$BPStatus <- data$BPAlerts
+
+# Checking the new data set 
+#head(data, 10)
+
+# Converting BPAlerts Column name to BPStatus 
+data_2 <- data_2 %>% rename(BPStatus = BPAlerts)
+
+# Printing Top 10 rows to show this change
+head(data_2, 10)
+
+```
+
+```{r Question 1 Part B}
+
+# Converting into a data frame
+as.data.frame(data_2)
+
+# Using case when to create a new Outcomes column
+data_2 <- data_2 %>% 
+  mutate(Outcomes = case_when(data_2$BPStatus == "Hypo1" | data_2$BPStatus == "Normal" ~ "Controlled", 
+                             data_2$BPStatus == "Hypo2" | data_2$BPStatus == "HTN1" | data_2$BPStatus == "HTN2" | data_2$BPStatus == "HTN3" ~ "Uncontrolled", 
+                             data_2$BPStatus == "NULL" ~ "Unknown"))
+
+# Creating a Dichotomous Outcome Table
+data_2 <- data_2 %>% mutate(Dich = case_when(data_2$Outcomes == "Controlled" ~ 1,
+                                             data_2$Outcomes == "Uncontrolled" ~ 0
+                                             ))
+
+# Removing NA rows with respect to the Dichotomous Outcome Table (i.e. Unknown Outcome rows were removed)
+data_2 <- data_2[!is.na(data_2$Dich), ]
+
+# Printing top 10 rows to show these changes
+head(data_2, 10)
+
+# Checking no. of rows that were removed
+removed_number = nrow(data) - nrow(data_2)
+
+```
+
+```{r Question 1 Part C Loading Packages}
+
+if (!require('RODBC')){
+  install.packages('sqldf')
+  install.packages('RODBC')
+  library('sqldf')
+  library('RODBC')
+  install.packages('ddply')
+  library('plyr')
+}
+
+```
+
+```{r Question 1 Part C}
+
+# Establishing my connection
+my_connection <- odbcConnect('qbs181', uid = 'rababu', pwd = 'rababu@qbs181',)
+
+# Pulling the Demographics Data 
+demographics_data <- sqlQuery(my_connection, "SELECT * FROM Demographics")
+
+# Merging the tables
+merge_table <- merge(data_2, demographics_data, by.x = "ID", by.y = "contactid")
+
+# Printing out top 10 rows to show these changes
+head(merge_table, 10)
+
+```
+
+```{r Question 1 Part D}
+
+# Converting into a data frame
+merge_table <- as.data.frame(merge_table)
+
+# Converting columns in dates
+merge_table$tri_imaginecareenrollmentemailsentdate <- as.Date(merge_table$tri_imaginecareenrollmentemailsentdate, format = "%m/%d/%Y")
+merge_table$tri_enrollmentcompletedate <- as.Date(merge_table$tri_enrollmentcompletedate, format = "%m/%d/%Y")
+
+# Computing the time of enrollment per row
+merge_table$tri_enrollmentlength <- as.Date(merge_table$tri_enrollmentcompletedate, format = "%m/%d/%Y") - as.Date(merge_table$tri_imaginecareenrollmentemailsentdate, format = "%m/%d/%Y")
+
+# How many rows had enrollment above 12 weeks? 
+length(which(merge_table$tri_enrollmentlength > 83))
+
+# Computing the mean dichotomous per week (per observed group) per patient
+means_dichotomous <- ddply(merge_table,c("ID","ObservedTime"),summarise, mean_dich_week =mean(Dich))
+merge_table <- merge(merge_table, means_dichotomous, by = c("ID","ObservedTime"))
+
+# Computing the mean dichotomous total per patient
+means_dichotomous_total <- ddply(merge_table,c("ID"),summarise, mean_dich_total =mean(Dich))
+merge_table <- merge(merge_table, means_dichotomous_total, by = c("ID"))
+
+# Computing the mean systolic value per patient
+means_systolic_total <- ddply(merge_table,c("ID"),summarise, avg_systolic =mean(SystolicValue))
+merge_table <- merge(merge_table, means_systolic_total, by = c("ID"))
+
+# Computing the mean diastolic value per patient
+means_diastolic_total <- ddply(merge_table,c("ID"),summarise, avg_diastolic =mean(Diastolicvalue))
+merge_table <- merge(merge_table, means_diastolic_total, by = c("ID"))
+
+# Ordering by contact id and observed time
+merge_table <- merge_table[with(merge_table, order(ID,ObservedTime)), ]
+
+# Printing out the top 10 rows to show the changes
+head(merge_table, 10)
+
+```
+
+```{r Question 1 Part E}
+
+# Filtering data for those patients observed for more than 83 days ~ for 12 weeks
+merge_table_12_weeks <- filter(merge_table, tri_enrollmentlength > 83)
+
+# Finding number of patients enrolled for more than 12 weeks 
+patients_12_week_count <- length(unique(merge_table_12_weeks$ID))
+
+# Obtaining only the first row per ID (finding the first recorded result ordered by observed time) for those patients >= 12 weeks
+merge_table_top <- merge_table_12_weeks %>% group_by(ID) %>% slice(1)
+
+# Obtaining only the last row per ID (finding the last recorded result ordered by observed time) for those patients >= 12 weeks
+merge_table_bot <- merge_table_12_weeks %>% group_by(ID) %>% slice(n())
+
+# Creating a comparative table 
+merge_table_bot$Dich_baseline <- merge_table_top$Dich
+  
+# Creating a comparative table 
+comparative <- merge_table_bot
+
+# Printing out top 10 rows to show the changes 
+head(comparative, 10)
+
+# Obtaining only the first row per ID (finding the first recorded result ordered by observed time) for all patients
+merge_table_top_total <- merge_table %>% group_by(ID) %>% slice(1)
+
+# Obtaining only the last row per ID (finding the last recorded result ordered by observed time) for all patients
+merge_table_bot_total <- merge_table %>% group_by(ID) %>% slice(n())
+
+# Creating a comparative table 
+merge_table_bot_total$Dich_baseline <- merge_table_top_total$Dich
+  
+# Creating a comparative table 
+comparative_total <- merge_table_bot_total
+
+# Printing out the top 10 rows to show the changes 
+head(comparative_total, 10)
+
+```
+There are two tables displayed above, comparative and comparative total. Comparative compares for only those patients enrolled for more than 83 days (for atleast 12 weeks). On the other hand, comparative total compares for all patients within the data set. 
+
+```{r Question 1 Part F}
+
+# Finding the number of Controlled and Uncontrolled Patients at week 1
+uncontrolled_week_1 = length(which(merge_table_top$Outcomes=="Uncontrolled"))
+controlled_week_1 = length(which(merge_table_top$Outcomes=="Controlled"))
+
+# Finding the number of Controlled and Uncontrolled Patients at end of enrollment week 12
+uncontrolled_week_12 = length(which(merge_table_bot$Outcomes=="Uncontrolled"))
+controlled_week_12 = length(which(merge_table_bot$Outcomes=="Controlled"))
+
+# Finding the number of patients who went from Uncontrolled to Controlled for those enrolled for 12 weeks
+uncontrolled_week_1 - uncontrolled_week_12
+
+# Finding the number of Controlled and Uncontrolled Patients at week 1
+uncontrolled_total_1 = length(which(merge_table_top_total$Outcomes=="Uncontrolled"))
+controlled_total_1 = length(which(merge_table_top_total$Outcomes=="Controlled"))
+
+# Finding the number of Controlled and Uncontrolled Patients at end of enrollment week 12
+uncontrolled_total_12 = length(which(merge_table_bot_total$Outcomes=="Uncontrolled"))
+controlled_total_12 = length(which(merge_table_bot_total$Outcomes=="Controlled"))
+
+# Finding the number of patients who went from Uncontrolled to Controlled for all those enrolled
+uncontrolled_total_1 - uncontrolled_total_12
+
+```     
+
+Therefore, for those patients observed for over 12 weeks, 1 patient moved from uncontrolled to controlled. On the other hand, when considering all the patients, regardless of their period of enrollment, 7 patients moved from uncontrolled to controlled. 
+
+# Question 2: Merging Tables in SQL 
+
+This question and its resulting output was done in SQL and will be uploaded separately
+
+# Question 3: Merging Tables in R
+
+```{r Question 3 Loading Packages}
+
+if (!require('data.table')){
+  library(data.table)
+}
+
+```
+
+```{r Question 3}
+
+# Pulling tables from sql server using ODBC connection
+demographics <- sqlQuery(my_connection, "SELECT * FROM Demographics")
+conditions <- sqlQuery(my_connection, "SELECT * FROM Conditions")
+messages <- sqlQuery(my_connection, "SELECT * FROM Text")
+
+# Merging the tables along contactid
+R_merge <- merge(demographics, conditions, by.x = "contactid", by.y = "tri_patientid")
+R_merge <- merge(R_merge, messages, by.x = "contactid", by.y = "tri_contactId")
+
+# Converting to Date time
+R_merge$TextSentDate <- as.Date(R_merge$TextSentDate, format = "%Y-%m-%d")
+R_merge$tri_imaginecareenrollmentemailsentdate <- as.Date(R_merge$tri_imaginecareenrollmentemailsentdate, format = "%m/%d/%Y")
+R_merge$tri_enrollmentcompletedate <- as.Date(R_merge$tri_enrollmentcompletedate, format = "%m/%d/%Y")
+
+# Using setDT() as I am working with large amounts of data in an effort to conserve memory
+R_merge_edited <- setDT(R_merge)
+
+# Finding the max text sent date time per contactid
+# Here, .SD is used to subset or self-reference the data
+R_merge_edited <- R_merge_edited[, .SD[which.max(TextSentDate)], by = contactid]
+
+# Checking 
+nrow(R_merge_edited) == length(unique(R_merge$contactid))
+
+# Printing top 10 and bottom 10 rows to show this change
+head(R_merge_edited, 10)
+
+```
+
+# Question 4
+
+My repository can be found under the following name: https://github.com/rbabu98/Data_Wrangling_Projects_and_Tasks
+
