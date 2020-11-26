@@ -13,7 +13,8 @@ output:
 
 ```{r Setting up a working directory}
 
-setwd("C:/Users/r9492/OneDrive/Desktop")
+# Removing information regarding personal directoy before publishing
+setwd("")
 
 ```
 
@@ -105,6 +106,7 @@ if (!require('RODBC')){
 ```{r Question 1 Part C}
 
 # Establishing my connection
+# Removing my password and username before publishing
 my_connection <- odbcConnect('qbs181', uid = 'rababu', pwd = 'rababu@qbs181',)
 
 # Pulling the Demographics Data 
