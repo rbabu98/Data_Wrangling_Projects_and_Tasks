@@ -1,0 +1,111 @@
+---
+title: "f002qyc_QBS181_Ex5"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Rahul Babu
+# October 15th 2020
+# QBS 181 Data Wrangling In Class Exercise 5
+# Professor Yapalparvi
+
+```{r}
+
+install.packages('sqldf')
+library('sqldf')
+install.packages('RODBC')
+library('RODBC')
+install.packages("tidyr")
+library(tidyr)
+install.packages("stringr")
+library(stringr)
+
+```
+
+```{r}
+my_connection <- odbcConnect('qbs181-dartmouth', 'rababu', 'rababu@qbs181',)
+```
+
+# Question 1)
+
+```{r}
+
+extracted_Flowsheets <- sqlQuery(my_connection, "SELECT * FROM Flowsheets")
+extracted_Flowsheets_name <- tolower(extracted_Flowsheets$DISP_NAME)
+updated_Flowsheets_name <- gsub("cc/kg", "CC-Kg", extracted_Flowsheets_name)
+View(updated_Flowsheets_name)
+
+```
+
+
+# Question 2)
+
+```{r}
+
+df <- as.data.frame(extracted_Flowsheets)
+df_symbols <- gsub("[[:alnum:]]", ' ',as.matrix(df))
+View(df_symbols)
+
+```
+
+
+# Question 3)
+
+```{r}
+extracted_Provider <- sqlQuery(my_connection, "SELECT * FROM Provider")
+updated_Provider <- separate(extracted_Provider,NEW_PROV_NAME, c("LastName","FirstName"), ",( )?")
+View(updated_Provider)
+extracted_names <- str_extract(updated_Provider$LastName, "^(W|w)a")
+View(extracted_names)
+
+index <- c()
+c = 1
+
+for (i in extracted_names)
+{
+  if (!is.na(i)) 
+  {
+    index <- append(index, c)
+  }
+  c <- c + 1 
+}
+
+View(index)
+
+```
+
+
+```{r}
+count = 0
+output1 <- c()
+output2 <- c()
+
+for (i in updated_Provider)
+{
+  FirstName <- updated_Provider$FirstName
+  LastName <- updated_Provider$LastName
+  
+  for (j in index)
+  {
+    
+    if (count == j)
+    {
+      output1 <- append(output1, FirstName)
+      output2 <- append(output2, LastName)
+    }
+  }
+count = count + 1
+}
+
+```
+
+
+```{r}
+View(output1)
+View(output2)
+```
