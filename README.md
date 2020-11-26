@@ -1,6 +1,8 @@
 # Data_Wrangling_Projects_and_Tasks
 Compilation of All Homeworks and Exams for QBS 181 Data Wrangling. 
 
+Exercises) Contains 8 files related to exercises done in both SQL and R concerning patient data/enrollment/implmentation of API keys
+
 Project_1 ) Contains files related to Homework 1 done in SQL. Homework 1 involved the reframing of patient data to add new columns grouping by enrollment, age, & gender. 
 
 Project_2 ) Contains files related to Homework 2 done in R. Homework 2 involved the merging of data tables to articulate phone call data of patients.  
