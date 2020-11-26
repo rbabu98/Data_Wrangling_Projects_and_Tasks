@@ -107,7 +107,7 @@ if (!require('RODBC')){
 
 # Establishing my connection
 # Removing my password and username before publishing
-my_connection <- odbcConnect('qbs181', uid = 'rababu', pwd = 'rababu@qbs181',)
+my_connection <- odbcConnect('qbs181', uid = '', pwd = '',)
 
 # Pulling the Demographics Data 
 demographics_data <- sqlQuery(my_connection, "SELECT * FROM Demographics")
