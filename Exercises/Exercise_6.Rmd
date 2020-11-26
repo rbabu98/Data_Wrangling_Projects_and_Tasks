@@ -1,0 +1,143 @@
+---
+title: "Exercise_6"
+output: html_document
+---
+
+```{r Setting Up Connection} 
+
+install.packages('sqldf') 
+install.packages('RODBC')
+
+library('sqldf') 
+library('RODBC')
+
+# password and username removed before publishing
+my_connection <- odbcConnect('qbs181-dartmouth', '', '')
+
+```
+
+
+# Question 1) 
+
+```{r Question 1}
+
+extracted_Demographics <- sqlQuery(my_connection, "SELECT * FROM Demographics") length = nrow(extracted_Demographics)
+View(extracted_Demographics)
+
+```
+
+# Finding the mean of non NA age values 
+
+```{r Finding the mean of non NA Values} 
+
+Age_output <- c()
+
+for (i in 1:length) {
+  value <- extracted_Demographics$tri_age[i] 
+  if (!is.na(value)){
+    Age_output = append(Age_output,value) 
+  }
+}
+
+mean <- round(mean(Age_output))
+
+# Replacing Missing Values in the column with the Mean 
+extracted_Demographics$tri_age[is.na(extracted_Demographics$tri_age)]<- mean
+
+# Checking the edited column 
+View(extracted_Demographics$tri_age)
+
+```
+
+# Question 2)
+
+```{r Setting Up Packages}
+
+install.packages('lubridate') 
+install.packages('stringr')
+
+library(lubridate) 
+library(stringr)
+
+```
+
+```{r Question 2}
+
+extracted_PhoneCall <- sqlQuery(my_connection, "SELECT * FROM PhoneCall") 
+length_phonecall = nrow(extracted_PhoneCall)
+View(extracted_PhoneCall)
+
+start_time <- strptime(extracted_PhoneCall$CallStartTime, format= "%d/%m/%y %H:%M") 
+duration <- extracted_PhoneCall$CallDuration
+View(duration)
+
+duration_seconds <- seconds(duration)
+end_time <- start_time + duration 
+View(end_time)
+
+extracted_PhoneCall$CallEndTime <- end_time 
+View(extracted_PhoneCall)
+
+```
+
+# Question 3)
+
+```{r} 
+
+install.packages('dplyr') 
+library(dplyr)
+
+```
+
+```{r Question 3}
+
+extracted_Encounters <- sqlQuery(my_connection, "SELECT * FROM Encounters")
+
+extracted_Procedure <- sqlQuery(my_connection, "SELECT * FROM [Procedure]") 
+
+extracted_Provider <- sqlQuery(my_connection, "SELECT * FROM Provider")
+
+View(extracted_Encounters) 
+View(extracted_Procedure) 
+View(extracted_Provider)
+
+# Changing the names of certain columns to perform a merge
+colnames(extracted_Encounters)[which(names(extracted_Encounters) == "NEW_VISIT_PROV_ID")] <- "PROV_ID"
+
+colnames(extracted_Provider)[which(names(extracted_Provider) == "NEW_PROV_ID")] <- "PROV_ID" 
+
+# Merging the tables
+Merge_2 <- sqldf("SELECT * FROM extracted_Encounters i INNER JOIN extracted_Procedure j ON i.NEW_PAT_ENC_CSN_ID=j.PAT_ENC_CSN_ID")
+
+Start_Date <- as.Date(Merge_2$NEW_HSP_ADMIT_DATE, format="%m/%d/%Y") 
+View(Start_Date)
+
+End_Date <- as.Date(Merge_2$NEW_HSP_DISCH_DATE) 
+View(End_Date)
+
+Duration <- End_Date - Start_Date 
+Merge_2$HSP_DURATION <- Duration
+
+max_duration <- max(Merge_2$HSP_DURATION, na.rm=TRUE)
+index <- which(Merge_2$HSP_DURATION == max_duration ) 
+procedure <- Merge_2$PROC_DESC[index]
+
+print(procedure) 
+
+```
+
+
+```{r Question 3 Part B}
+
+Merge_2_sorted <- Merge_2[order(Merge_2[, "HSP_DURATION"]),, drop=FALSE] 
+View(Merge_2_sorted)
+
+```
+
+
+
+
+
+
+
+

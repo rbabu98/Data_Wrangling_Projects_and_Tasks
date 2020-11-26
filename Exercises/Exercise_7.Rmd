@@ -1,0 +1,99 @@
+---
+title: "PS7"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Question 1) 
+
+```{r Question 1 Installing Packages}
+
+if (!require('rvest')) 
+{
+  install.packages('rvest')
+  library('rvest')
+}
+
+```
+
+```{r Question 1}
+
+url <- "https://geiselmed.dartmouth.edu/qbs/2019-cohort/"
+geisel_cohort_2019_webpage <- read_html(url)
+
+# Scraping the title
+
+geisel_cohort_2019_webpage %>% html_nodes("title") %>% html_text()
+
+# Scraping the different links 
+
+geisel_cohort_2019_webpage %>% html_nodes("li") %>% html_text()
+
+# Div tag is used for the division of a document or section in an HTML document. Here, the tag can be scraped to find out more information regarding the cohort.  
+
+geisel_cohort_2019_webpage %>% html_nodes("ul") %>% html_text()
+
+# Div tag is used for the division of a document or section in an HTML document. Here, the tag can be scraped to find out more information regarding the cohort. 
+
+geisel_cohort_2019_webpage %>% html_nodes("div") %>% html_text()
+
+geisel_cohort_2019_webpage %>% html_nodes("a") %>% html_text()
+
+geisel_cohort_2019_webpage %>% html_nodes("span") %>% html_text()
+
+```
+
+# Question 2) 
+
+
+```{r Question 2 Installing Packages}
+
+if (!require('rnoaa')) 
+{
+  install.packages('rnoaa')
+  library(rnoaa)
+}
+
+```
+
+```{r Question 2}
+
+key = ''
+station_id = ''
+
+wright_patterson_afb_weather <- ncdc(datasetid = 'GHCND', stationid = station_id, startdate = '2020-01-01', enddate = '2020-11-01', token = key)
+
+length = length(wright_patterson_afb_weather$data$datatype)
+
+t_max_output <- c()
+t_min_output <- c()
+
+for (i in 1:length)
+{
+  t_max = 'TMAX'
+  t_min = 'TMIN'
+  if (wright_patterson_afb_weather$data$datatype[i] == t_max)
+  {
+    t_max_output <- append(t_max_output, wright_patterson_afb_weather$data$value[i])
+  }
+  else if (wright_patterson_afb_weather$data$datatype[i] == t_min)
+  {
+    t_min_output <- append(t_min_output, wright_patterson_afb_weather$data$value[i])
+  }
+  else 
+  {
+    NULL
+  }
+}
+
+max(t_max_output)
+min(t_min_output)
+
+```
+
+
