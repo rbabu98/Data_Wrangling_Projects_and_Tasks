@@ -26,9 +26,9 @@ install.packages("stringr")
 library(stringr)
 
 ```
-
+# Username and password removed for publishing
 ```{r}
-my_connection <- odbcConnect('qbs181-dartmouth', 'rababu', 'rababu@qbs181',)
+my_connection <- odbcConnect('qbs181-dartmouth', '', '',)
 ```
 
 # Question 1)
