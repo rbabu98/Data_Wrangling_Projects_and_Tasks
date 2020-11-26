@@ -1,7 +1,7 @@
 # Data_Wrangling_Projects_and_Tasks
 Compilation of All Homeworks and Exams for QBS 181 Data Wrangling. 
 
-Exercises) Contains 8 files related to exercises done in both SQL and R concerning patient data/enrollment/implmentation of API keys
+Exercises) Contains 8 files related to exercises done in both SQL and R concerning patient data/enrollment and data concerning the implmentation of API keys (twitter, noa, etc.)
 
 Project_1 ) Contains files related to Homework 1 done in SQL. Homework 1 involved the reframing of patient data to add new columns grouping by enrollment, age, & gender. 
 
@@ -12,3 +12,5 @@ Project_3 ) Contains files related to Homework 3 done in R. Homework 3 involved 
 Midterm) Contains files related to the Midterm done in R. The midterm focused on finding multiple different ways to 'clean', articulate, and encrypt large data sets (i.e. mean imputation, encrypted fields, etc.). 
 
 Final) The final contains 2 parts, one done in R and another done in SQL. The files contained are related to the articulation of patient (Blood pressure) data sets. 
+
+*All passwords and usernames were removed from all files before publishing
