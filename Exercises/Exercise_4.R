@@ -10,8 +10,8 @@ install.packages('RODBC')
 library('sqldf')
 library('RODBC')
 
-
-my_connection <- odbcConnect('qbs181', uid = 'rababu', pwd = 'rababu@qbs181',)
+# username and password removed for publishing
+my_connection <- odbcConnect('qbs181', uid = '', pwd = '',)
 
 #Question 1) 
 
