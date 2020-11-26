@@ -7,7 +7,7 @@ Project_1 ) Contains files related to Homework 1 done in SQL. Homework 1 involve
 
 Project_2 ) Contains files related to Homework 2 done in R. Homework 2 involved the merging of data tables to articulate phone call data of patients.  
 
-Project_3 ) Contains files related to Homework 3 done in R. Homework 3 involved reframing tuberbulosis and flight data from the library('tidyverse') and library('nycflights')
+Project_3 ) Contains files related to Homework 3 done in R. Homework 3 involved reframing tuberculosis and flight data from the library('tidyverse') and library('nycflights')
 
 Midterm) Contains files related to the Midterm done in R. The midterm focused on finding multiple different ways to 'clean', articulate, and encrypt large data sets (i.e. mean imputation, encrypted fields, etc.). 
 
